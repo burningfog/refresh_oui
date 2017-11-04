@@ -1,0 +1,123 @@
+#! /bin/bash
+
+###############################################################################
+# refresh_oui                                                                 #
+# ===========                                                                 #
+# Update-script for OUI and IAB-Data-Files                                    #
+# v 1.0                                                                       #
+#                                                                             #
+# Copyright 2017 Ralf Eberwein - Burning Fog                                  #
+# http://hacker-inside.de burningfog@hacker-inside.de                         #
+#                                                                             #
+# This program is free software; you can redistribute it and/or modify        #
+# it under the terms of the GNU General Public License as published by        #
+# the Free Software Foundation; Applies version 2 of the License.             #
+#                                                                             #
+# This program is distributed in the hope that it will be useful,             #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               #
+# GNU General Public License for more details.                                #
+#                                                                             #
+# You should have received a copy of the GNU General Public License           #
+# along with this program; if not, write to the Free Software                 #
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA  # #                                                                             #
+###############################################################################
+
+if [ ! -d /usr/share/ieee-data ]; then
+    mkdir /usr/share/ieee-data
+fi
+
+cd /usr/share/ieee-data
+wget -O oui.txt.tmp http://standards-oui.ieee.org/oui.txt
+mv -f oui.txt.tmp oui.txt
+wget -O iab.txt.tmp http://standards-oui.ieee.org/iab/iab.txt
+mv -f iab.txt.tmp iab.txt
+
+# Divide the data into Manufacturer and Address files
+cat oui.txt | grep '(base 16)' | cut -f3 > mac.manufacturer
+cat oui.txt | grep '(base 16)' | cut -f1 -d' ' > mac.address
+
+cat iab.txt | grep '(' | egrep 'hex|base' | paste -d"\t" - - | sed 's/ \+/ /g' | cut -f1 -d' ' | sed 's/-//g' > iab.address.part1
+cat iab.txt | grep '(' | egrep 'hex|base' | paste -d"\t" - - | sed 's/ \+/ /g' | cut -f2 | cut -c 1-3 > iab.address.part2
+cat iab.txt | grep '(' | egrep 'hex|base' | paste -d"\t" - - | sed 's/ \+/ /g' | cut -f2 | cut -c25- > iab.manufacturer
+
+# Paste them back together for nmap and arp-scan data files
+paste -d '' iab.address.part1 iab.address.part2 > iab.address
+paste iab.address iab.manufacturer | sort > iab-arp-scan
+paste mac.address mac.manufacturer | sort > nmap-mac-prefixes
+
+# Parse the address data
+cat mac.address | perl -pe 's/^(([^0].)|0(.))(([^0].)|0(.))(([^0].)|0(.))/\2\3-\5\6-\8\9/' > mac.address.hyphen
+cat mac.address | perl -pe 's/^(([^0].)|0(.))(([^0].)|0(.))(([^0].)|0(.))/\2\3:\5\6:\8\9/' > mac.address.upper
+cat mac.address.upper | tr [A-Z] [a-z] > mac.address.lower
+
+# Paste the parsed data into the arpwatch file
+paste mac.address.lower mac.manufacturer | sort > ethercodes.dat
+
+# Paste the parsed data into the unicornscan file
+paste -d ':' mac.address.hyphen mac.manufacturer | sort > unicorn.dat
+
+# Paste the parsed data into the bluelog file
+paste -d ',' mac.address.upper mac.manufacturer | sort > bluelog.dat
+
+# Clean up intermediary files
+#rm tmp.address
+rm mac.address
+rm mac.address.*
+rm mac.manufacturer
+rm -f iab.address.*
+rm iab.address
+rm iab.manufacturer
+
+if [ -f /usr/share/arp-scan/ieee-oui.txt ]; then
+    rm -f /usr/share/arp-scan/ieee-oui.txt
+    ln -s /usr/share/ieee-data/nmap-mac-prefixes /usr/share/arp-scan/ieee-oui.txt
+fi
+
+if [ -f /usr/share/arp-scan/ieee-iab.txt ]; then
+    rm -f /usr/share/arp-scan/ieee-iab.txt
+    ln -s /usr/share/ieee-data/iab-arp-scan /usr/share/arp-scan/ieee-iab.txt
+fi
+
+if [ -f /usr/share/golismero/thirdparty_libs/netaddr/eui/iab.txt ]; then
+    rm -f /usr/share/golismero/thirdparty_libs/netaddr/eui/iab.txt
+    ln -s /usr/share/ieee-data/iab.txt /usr/share/golismero/thirdparty_libs/netaddr/eui/iab.txt
+fi
+
+if [ -f /usr/share/nmap/nmap-mac-prefixes ]; then
+    rm -f /usr/share/nmap/nmap-mac-prefixes
+    ln -s /usr/share/ieee-data/nmap-mac-prefixes /usr/share/nmap/nmap-mac-prefixes
+fi
+
+if [ -f /usr/share/btscanner/oui.txt ]; then
+    rm -f /usr/share/btscanner/oui.txt
+    ln -s /usr/share/ieee-data/nmap-mac-prefixes /usr/share/btscanner/oui.txt
+fi
+
+if [ -f /usr/share/arpwatch/ethercodes.dat ]; then
+    rm -f /usr/share/arpwatch/ethercodes.dat
+    ln -s /usr/share/ieee-data/ethercodes.dat /usr/share/arpwatch/ethercodes.dat
+fi
+
+if [ -f /etc/arpalert/oui.txt ]; then
+    rm -f /etc/arpalert/oui.txt
+    ln -s /usr/share/ieee-data/oui.txt /etc/arpalert/oui.txt
+fi
+
+if [ -f /usr/share/golismero/thirdparty_libs/netaddr/eui/oui.txt ]; then
+    rm -f /usr/share/golismero/thirdparty_libs/netaddr/eui/oui.txt
+    ln -s /usr/share/ieee-data/oui.txt /usr/share/golismero/thirdparty_libs/netaddr/eui/oui.txt
+fi
+
+if [ -f /usr/share/bluelog/oui.txt ]; then
+    rm -f /usr/share/bluelog/oui.txt
+    ln -s /usr/share/ieee-data/bluelog.dat /usr/share/bluelog/oui.txt
+fi
+
+if [ -f /etc/unicornscan/oui.txt ]; then
+    rm -f /etc/unicornscan/oui.txt
+    ln -s /usr/share/ieee-data/unicorn.dat /etc/unicornscan/oui.txt
+fi
+
+
+date > .lastupdate
