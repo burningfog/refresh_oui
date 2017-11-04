@@ -2,6 +2,7 @@
 Updating the vendor files oui &amp; iab systemwide
 
 -german- -english translation below-
+
 Jeder, der sich administrativ mit Linux beschäftigt, angefangen bei einem einfachen Scan mit nmap über eine Intrusion-Detection mit arpalert oder arpwatch bis zu spezielleren Programmen wie unicornscan oder btscan, alle haben eigentlich immer ein gleiches Problem:
 
 Die Vendor-Dateien, welche einer MAC-Adresse einen Hersteller zuordnen, sind in der Regel hoffnungslos veraltet, wodurch die Zuordnung lückenhaft ist. Erschwerend kommt hinzu, dass die Dateien nicht das Original-Format beinhalten, sondern oftmals speziell formatiert sind.
@@ -28,9 +29,11 @@ Idealerweise kann das Script in einen update-Prozess mittels /etc/cron.d oder cr
 Sollten noch weitere Formate relevant sein oder andere zu unterstützende Programme, dann schreibt mir bitte eine Mail, damit ich diese in mein Script mit einbinden kann.
 
 Gruesse
+
 burningfog
 
 -english-
+
 Everyone, who works with linux at admin-niveau, starting with a normal nmap-scan about intrusion detection with arpalert or arpwatch up to specific programs like unicornscan or btscan has the same problem:
 
 the vendor files, which translate the MAC-address to a manufacturer, are really old, so the result is incomplete. In addition the vendor-files dont have the same form like the original oui-files and need to be transferred via scripts. Updating the vendor file for nmap is not the same like updating the file for unicornscan.
@@ -55,4 +58,5 @@ You should thinkk about taking this script in an update-process with /etc/cron.d
 If there are other vendor-file-formats or applications to support, please write an email so I can insert them into my script.
 
 Greets
+
 burning fog
